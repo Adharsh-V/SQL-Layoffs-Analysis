@@ -1,0 +1,136 @@
+
+select * from layoffs;
+
+
+
+create table layoffs_staging like layoffs;
+insert  layoffs_staging select * from layoffs;
+select * from layoffs_staging;
+
+-- 1. removing duplicates
+-- 2.standardize data(miss spelling and all correction)
+-- 3.null values or blank values
+-- 4. remove columns that aren't necessary
+
+
+-- 1 removing duplicates
+ 
+ select *,
+ row_number() over(
+ partition by company,location,industry,total_laid_off,percentage_laid_off,`date`,stage,country,funds_raised_millions) AS row_num -- date is a keyword that is why we used backtick to make it a column
+ from layoffs_staging;
+
+
+
+
+ with duplicate_cte  AS
+ (select *,
+ row_number() over(
+ partition by company,location,industry,total_laid_off,percentage_laid_off,`date`,stage,country,funds_raised_millions) AS row_num -- date is a keyword that is why we used backtick to make it a column
+ from layoffs_staging
+ ) 
+ delete from duplicate_cte
+ where row_num>1;
+
+select * from layoffs_staging where company ='Casper';
+
+create table layoff_with_rowNUM as 
+select *,
+ row_number() over(
+ partition by company,location,industry,total_laid_off,percentage_laid_off,`date`,stage,country,funds_raised_millions) AS row_num -- date is a keyword that is why we used backtick to make it a column
+ from layoffs_staging;
+
+delete from layoff_with_row_num where row_num>1;
+
+select * from layoff_with_row_num where row_num>1;
+
+select * from layoff_with_row_num;
+
+
+-- 2 standardizing data
+
+select distinct(company) from layoff_with_row_num ;
+
+select trim(company) from layoff_with_row_num;
+
+update layoff_with_row_num set company=trim(company);
+select * from layoff_with_row_num;
+
+select distinct industry from layoff_with_row_num;
+
+
+select * from layoff_with_row_num
+where industry like 'crypto%';
+
+
+
+update layoff_with_row_num 
+set industry='Crypto'
+where industry like 'Crypto%';
+
+select distinct industry from layoff_with_row_num;
+
+
+select distinct country from layoff_with_row_num order by 1;
+
+update layoff_with_row_num 
+set country='United States'
+where country like 'United States%';
+
+
+
+select `date`,
+ str_to_date(`date`,'%m/%d/%Y')
+ from layoff_with_row_num;
+ 
+ update layoff_with_row_num
+ set `date`= str_to_date(`date`,'%m/%d/%Y');
+
+
+select `date` from layoff_with_row_num;
+
+alter table layoff_with_row_num
+modify `date` date;
+
+select * from layoff_with_row_num where industry is null or  industry='';
+ 
+select * from layoff_with_row_num where company='Airbnb';
+ 
+ update layoff_with_row_num 
+ set industry='travel'
+ where company='Airbnb';
+ 
+ 
+update layoff_with_row_num 
+set industry=null
+where industry='';
+
+
+select * from layoff_with_row_num
+where industry is null;
+
+select t1.industry,t2.industry
+from layoff_with_row_num as t1
+join layoff_with_row_num as t2
+on t1.company=t2.company
+where t1.industry is null and t2.industry is not null;
+
+update layoff_with_row_num as t1
+join layoff_with_row_num as t2
+on t1.company=t2.company
+set t1.industry=t2.industry
+where t1.industry is null and t2.industry is not null; 
+
+select * from layoff_with_row_num
+ where company like 'bally%';
+ 
+select * from layoff_with_row_num;
+select * from   layoff_with_row_num where total_laid_off is null and percentage_laid_off is null;
+ 
+delete from   layoff_with_row_num where total_laid_off is null and percentage_laid_off is null; 
+ 
+select * from layoff_with_row_num;
+   alter table layoff_with_row_num 
+   drop column 
+   row_num;
+ 
